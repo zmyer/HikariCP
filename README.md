@@ -13,12 +13,12 @@ Fast, simple, reliable.  HikariCP is a "zero-overhead" production ready JDBC con
 
 ----------------------------------------------------
 
-_Java 8/9 maven artifact:_
+_Java 8 thru 11 maven artifact:_
 ```xml
     <dependency>
         <groupId>com.zaxxer</groupId>
         <artifactId>HikariCP</artifactId>
-        <version>3.1.0</version>
+        <version>3.3.1</version>
     </dependency>
 ```
 _Java 7 maven artifact (*maintenance mode*):_
@@ -63,7 +63,7 @@ Microbenchmarks were created to isolate and measure the overhead of pools using 
 
 #### Spike Demand Pool Comparison
 <a href="https://github.com/brettwooldridge/HikariCP/blob/dev/documents/Welcome-To-The-Jungle.md"><img width="400" align="right" src="https://github.com/brettwooldridge/HikariCP/wiki/Spike-Hikari.png"></a>
-Anaylsis of HikariCP v2.6, in comparison to other pools, in relation to a unique "spike demand" load.
+Analysis of HikariCP v2.6, in comparison to other pools, in relation to a unique "spike demand" load.
 
 The customer's environment imposed a high cost of new connection acquisition, and a requirement for a dynamically-sized pool, but yet a need for responsiveness to request spikes.  Read about the spike demand handling [here](https://github.com/brettwooldridge/HikariCP/blob/dev/documents/Welcome-To-The-Jungle.md).
 <br/>
@@ -73,8 +73,8 @@ The customer's environment imposed a high cost of new connection acquisition, an
 AKA *"What you probably didn't know about connection pool sizing"*.  Watch a video from the Oracle Real-world Performance group, and learn about why connection pools do not need to be sized as large as they often are.  In fact, oversized connection pools have a clear and demonstrable *negative* impact on performance; a 50x difference in the case of the Oracle demonstration.  [Read on to find out](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing).
 <br/>
 #### WIX Engineering Analysis
-<a href="http://engineering.wix.com/2015/04/28/how-does-hikaricp-compare-to-other-connection-pools/"><img width="180" align="left" src="https://github.com/brettwooldridge/HikariCP/wiki/Wix-Engineering.png"></a>
-We'd like to thank the guys over at WIX for the unsolicited and deep write-up about HikariCP on their [engineering blog](http://engineering.wix.com/2015/04/28/how-does-hikaricp-compare-to-other-connection-pools/).  Take a look if you have time.
+<a href="https://www.wix.engineering/blog/how-does-hikaricp-compare-to-other-connection-pools"><img width="180" align="left" src="https://github.com/brettwooldridge/HikariCP/wiki/Wix-Engineering.png"></a>
+We'd like to thank the guys over at WIX for the unsolicited and deep write-up about HikariCP on their [engineering blog](https://www.wix.engineering/blog/how-does-hikaricp-compare-to-other-connection-pools).  Take a look if you have time.
 <br/>
 <br/>
 <br/>
@@ -358,6 +358,9 @@ properties of their own driver.  This includes Oracle, MySQL, Derby, MSSQL, and 
 even support slow query logging.  For those few databases that do not support it, several options are available.
 We have received [a report that p6spy works well](https://github.com/brettwooldridge/HikariCP/issues/57#issuecomment-354647631),
 and also note the availability of [log4jdbc](https://github.com/arthurblake/log4jdbc) and [jdbcdslog-exp](https://code.google.com/p/jdbcdslog-exp/).
+
+#### Rapid Recovery
+Please read the [Rapid Recovery Guide](https://github.com/brettwooldridge/HikariCP/wiki/Rapid-Recovery) for details on how to configure your driver and system for proper recovery from database restart and network partition events.
 
 ----------------------------------------------------
 

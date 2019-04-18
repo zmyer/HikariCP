@@ -471,20 +471,8 @@ public class HikariConfig implements HikariConfigMXBean
    {
       checkIfSealed();
 
-      Class<?> driverClass = null;
-      ClassLoader threadContextClassLoader = Thread.currentThread().getContextClassLoader();
+      Class<?> driverClass = attemptFromContextLoader(driverClassName);
       try {
-         if (threadContextClassLoader != null) {
-            try {
-               driverClass = threadContextClassLoader.loadClass(driverClassName);
-               LOGGER.debug("Driver class {} found in Thread context class loader {}", driverClassName, threadContextClassLoader);
-            }
-            catch (ClassNotFoundException e) {
-               LOGGER.debug("Driver class {} not found in Thread context class loader {}, trying classloader {}",
-                            driverClassName, threadContextClassLoader, this.getClass().getClassLoader());
-            }
-         }
-
          if (driverClass == null) {
             driverClass = this.getClass().getClassLoader().loadClass(driverClassName);
             LOGGER.debug("Driver class {} found in the HikariConfig class classloader {}", driverClassName, this.getClass().getClassLoader());
@@ -498,7 +486,7 @@ public class HikariConfig implements HikariConfigMXBean
       }
 
       try {
-         driverClass.newInstance();
+         driverClass.getConstructor().newInstance();
          this.driverClassName = driverClassName;
       }
       catch (Exception e) {
@@ -758,7 +746,6 @@ public class HikariConfig implements HikariConfigMXBean
     *
     * @return {@code true} if HikariCP will register MXBeans, {@code false} if it will not
     */
-   @SuppressWarnings("BooleanMethodIsAlwaysInverted")
    public boolean isRegisterMbeans()
    {
       return isRegisterMbeans;
@@ -905,6 +892,22 @@ public class HikariConfig implements HikariConfigMXBean
    //                          Private methods
    // ***********************************************************************
 
+   private Class<?> attemptFromContextLoader(final String driverClassName) {
+      final ClassLoader threadContextClassLoader = Thread.currentThread().getContextClassLoader();
+      if (threadContextClassLoader != null) {
+         try {
+            final Class<?> driverClass = threadContextClassLoader.loadClass(driverClassName);
+            LOGGER.debug("Driver class {} found in Thread context class loader {}", driverClassName, threadContextClassLoader);
+            return driverClass;
+         } catch (ClassNotFoundException e) {
+            LOGGER.debug("Driver class {} not found in Thread context class loader {}, trying classloader {}",
+               driverClassName, threadContextClassLoader, this.getClass().getClassLoader());
+         }
+      }
+
+      return null;
+   }
+
    @SuppressWarnings("StatementWithEmptyBody")
    public void validate()
    {
@@ -969,16 +972,6 @@ public class HikariConfig implements HikariConfigMXBean
          maxLifetime = MAX_LIFETIME;
       }
 
-      if (idleTimeout + SECONDS.toMillis(1) > maxLifetime && maxLifetime > 0) {
-         LOGGER.warn("{} - idleTimeout is close to or more than maxLifetime, disabling it.", poolName);
-         idleTimeout = 0;
-      }
-
-      if (idleTimeout != 0 && idleTimeout < SECONDS.toMillis(10)) {
-         LOGGER.warn("{} - idleTimeout is less than 10000ms, setting to default {}ms.", poolName, IDLE_TIMEOUT);
-         idleTimeout = IDLE_TIMEOUT;
-      }
-
       if (leakDetectionThreshold > 0 && !unitTest) {
          if (leakDetectionThreshold < SECONDS.toMillis(2) || (leakDetectionThreshold > maxLifetime && maxLifetime > 0)) {
             LOGGER.warn("{} - leakDetectionThreshold is less than 2000ms or more than maxLifetime, disabling it.", poolName);
@@ -997,15 +990,23 @@ public class HikariConfig implements HikariConfigMXBean
       }
 
       if (maxPoolSize < 1) {
-         maxPoolSize = (minIdle <= 0) ? DEFAULT_POOL_SIZE : minIdle;
+         maxPoolSize = DEFAULT_POOL_SIZE;
       }
 
       if (minIdle < 0 || minIdle > maxPoolSize) {
          minIdle = maxPoolSize;
       }
 
-      if (idleTimeout != IDLE_TIMEOUT && idleTimeout != 0 && minIdle == maxPoolSize) {
-         LOGGER.warn("{} - idleTimeout has been set but has no effect because the pool is operating as a fixed size pool.");
+      if (idleTimeout + SECONDS.toMillis(1) > maxLifetime && maxLifetime > 0 && minIdle < maxPoolSize) {
+         LOGGER.warn("{} - idleTimeout is close to or more than maxLifetime, disabling it.", poolName);
+         idleTimeout = 0;
+      }
+      else if (idleTimeout != 0 && idleTimeout < SECONDS.toMillis(10) && minIdle < maxPoolSize) {
+         LOGGER.warn("{} - idleTimeout is less than 10000ms, setting to default {}ms.", poolName, IDLE_TIMEOUT);
+         idleTimeout = IDLE_TIMEOUT;
+      }
+      else  if (idleTimeout != IDLE_TIMEOUT && idleTimeout != 0 && minIdle == maxPoolSize) {
+         LOGGER.warn("{} - idleTimeout has been set but has no effect because the pool is operating as a fixed size pool.", poolName);
       }
    }
 
@@ -1014,7 +1015,6 @@ public class HikariConfig implements HikariConfigMXBean
       if (sealed) throw new IllegalStateException("The configuration of the pool is sealed once started. Use HikariConfigMXBean for runtime changes.");
    }
 
-   @SuppressWarnings("StatementWithEmptyBody")
    private void logConfiguration()
    {
       LOGGER.debug("{} - configuration:", poolName);
